@@ -38,7 +38,7 @@ A smart API-based social media management system that automates post creation an
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/social-media-agent.git
+git clone https://github.com/khushwant04/social-media-agent.git
 cd social-media-agent
 
 # Create virtual environment
