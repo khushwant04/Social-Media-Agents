@@ -1,0 +1,12 @@
+fastapi[all]
+langchain
+langgraph
+langchain_huggingface
+langchain_google_community
+unstructured
+unstructured[pdf]
+pymupdf
+langchain_google_genai
+jupyter
+IPython
+langchain_pinecone
