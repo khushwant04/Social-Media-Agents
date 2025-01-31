@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException, Depends, Query
+from fastapi import APIRouter, Request, HTTPException, Depends
 from fastapi.responses import RedirectResponse
 import requests
 import os
@@ -15,9 +15,10 @@ CLIENT_ID = os.getenv("X_CLIENT_ID")
 CLIENT_SECRET = os.getenv("X_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("X_REDIRECT_URI")
 
+# Replace with your actual frontend URL
+FRONTEND_URL = "http://localhost:3000/dashboard/assistants"  # Redirect frontend URL
 AUTHORIZATION_URL = "https://x.com/i/oauth2/authorize"
 TOKEN_URL = "https://api.x.com/2/oauth2/token"
-TWEET_URL = "https://api.x.com/2/tweets"
 USERINFO_URL = "https://api.x.com/2/users/me"
 
 
@@ -27,6 +28,8 @@ def generate_pkce():
         hashlib.sha256(code_verifier.encode("utf-8")).digest()
     ).decode("utf-8").replace("=", "")
     return code_verifier, code_challenge
+
+
 # Step 1: Redirect user to X.com for authentication
 code_verifiers = {}
 
@@ -45,21 +48,18 @@ def login_x(user_id: str):
     return RedirectResponse(
         f"{AUTHORIZATION_URL}?response_type=code&client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&state={user_id}&scope={scopes}&code_challenge={code_challenge}&code_challenge_method=S256"
     )
-    
-    
+
+
 # Step 2: Handle X.com OAuth2 callback
 @router.get("/auth/x/callback")
 def auth_x_callback(code: str, state: str, db: Session = Depends(get_db), request: Request = None):
     """
-    Handles the X.com OAuth2 callback and stores the access token and user ID for the user.
+    Handles the X.com OAuth2 callback and redirects the user to the frontend with an access token.
     """
     if request and 'error' in request.query_params:
         error = request.query_params.get("error")
         description = request.query_params.get("error_description")
         raise HTTPException(status_code=400, detail=f"{error}: {description}")
-
-    # Debugging: Print the authorization code
-    print(f"Authorization code: {code}")  # Debugging
 
     # Retrieve the code_verifier using the state (user_id)
     code_verifier = code_verifiers.get(state)
@@ -76,20 +76,17 @@ def auth_x_callback(code: str, state: str, db: Session = Depends(get_db), reques
     }
     auth = (CLIENT_ID, CLIENT_SECRET)
     response = requests.post(TOKEN_URL, data=data, auth=auth)
-    print(f"Token exchange response: {response.status_code}, {response.text}")  # Debugging
 
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail="Failed to obtain access token")
 
     access_token = response.json().get("access_token")
-    print(f"Access token: {access_token}")  # Debugging
 
     # Fetch the user's profile information using the X.com API
     headers = {
         "Authorization": f"Bearer {access_token}",
     }
     userinfo_response = requests.get(USERINFO_URL, headers=headers)
-    print(f"Userinfo response: {userinfo_response.status_code}, {userinfo_response.text}")  # Debugging
 
     if userinfo_response.status_code != 200:
         raise HTTPException(status_code=400, detail="Failed to fetch user profile")
@@ -107,4 +104,5 @@ def auth_x_callback(code: str, state: str, db: Session = Depends(get_db), reques
     # Clean up the code_verifier (optional)
     code_verifiers.pop(state, None)
 
-    return {"message": "Authentication successful", "user_id": state}
+    # 🔥 Redirect the user to the frontend with the token
+    return RedirectResponse(url=f"{FRONTEND_URL}?token={access_token}")
