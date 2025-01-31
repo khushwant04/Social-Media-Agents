@@ -12,6 +12,8 @@ CLIENT_ID = os.getenv("LINKEDIN_CLIENT_ID")
 CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("LINKEDIN_REDIRECT_URI")
 
+# Replace with your actual values
+FRONTEND_URL = "http://localhost:3000/dashboard/assistants"  # Redirect frontend URL
 AUTHORIZATION_URL = "https://www.linkedin.com/oauth/v2/authorization"
 TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
 USERINFO_URL = "https://api.linkedin.com/v2/userinfo"
@@ -29,19 +31,16 @@ def login_linkedin(user_id: str):
         f"{AUTHORIZATION_URL}?response_type=code&client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&state={user_id}&scope={scopes}"
     )
 
-# Step 2: Handle LinkedIn OAuth2 callback
+
 @router.get("/auth/linkedin/callback")
 def auth_linkedin_callback(code: str, state: str, db: Session = Depends(get_db), request: Request = None):
     """
-    Handles the LinkedIn OAuth2 callback and stores the access token and URN for the user.
+    Handles the LinkedIn OAuth2 callback and redirects the user to the frontend with an access token.
     """
     if request and 'error' in request.query_params:
         error = request.query_params.get("error")
         description = request.query_params.get("error_description")
         raise HTTPException(status_code=400, detail=f"{error}: {description}")
-
-    # Debugging: Print the authorization code
-    print(f"Authorization code: {code}")  # Debugging
 
     # Exchange the authorization code for an access token
     data = {
@@ -52,27 +51,25 @@ def auth_linkedin_callback(code: str, state: str, db: Session = Depends(get_db),
         "client_secret": CLIENT_SECRET,
     }
     response = requests.post(TOKEN_URL, data=data)
-    print(f"Token exchange response: {response.status_code}, {response.text}")  # Debugging
 
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail="Failed to obtain access token")
 
     access_token = response.json().get("access_token")
-    print(f"Access token: {access_token}")  # Debugging
 
-    # Fetch the user's profile information using the OpenID Connect userinfo endpoint
+    # Fetch user's LinkedIn profile
     headers = {
         "Authorization": f"Bearer {access_token}",
         "X-Restli-Protocol-Version": "2.0.0",
     }
     userinfo_response = requests.get(USERINFO_URL, headers=headers)
-    print(f"Userinfo response: {userinfo_response.status_code}, {userinfo_response.text}")  # Debugging
 
     if userinfo_response.status_code != 200:
         raise HTTPException(status_code=400, detail="Failed to fetch user profile")
 
     userinfo = userinfo_response.json()
     linkedin_urn = userinfo.get("sub")  # LinkedIn URN is in the "sub" field
+
     if not linkedin_urn:
         raise HTTPException(status_code=400, detail="Failed to retrieve LinkedIn URN")
 
@@ -81,4 +78,5 @@ def auth_linkedin_callback(code: str, state: str, db: Session = Depends(get_db),
     db.merge(db_token)  # Update if exists, insert if new
     db.commit()
 
-    return {"message": "Authentication successful", "user_id": state}
+    # 🔥 Redirect the user to the frontend with the token
+    return RedirectResponse(url=f"{FRONTEND_URL}?token={access_token}")
