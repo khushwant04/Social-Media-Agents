@@ -16,7 +16,7 @@ CLIENT_SECRET = os.getenv("X_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("X_REDIRECT_URI")
 
 # Replace with your actual frontend URL
-FRONTEND_URL = "http://localhost:3000/dashboard/assistants"  # Redirect frontend URL
+FRONTEND_URL = "http://platform.hexelstudio.com/dashboard/assistants"  # Redirect frontend URL
 AUTHORIZATION_URL = "https://x.com/i/oauth2/authorize"
 TOKEN_URL = "https://api.x.com/2/oauth2/token"
 USERINFO_URL = "https://api.x.com/2/users/me"

@@ -13,7 +13,7 @@ CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET")
 REDIRECT_URI = os.getenv("LINKEDIN_REDIRECT_URI")
 
 # Replace with your actual values
-FRONTEND_URL = "http://localhost:3000/dashboard/assistants"  # Redirect frontend URL
+FRONTEND_URL = "https://platform.hexelstudio.com/dashboard/assistants"  # Redirect frontend URL
 AUTHORIZATION_URL = "https://www.linkedin.com/oauth/v2/authorization"
 TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
 USERINFO_URL = "https://api.linkedin.com/v2/userinfo"
